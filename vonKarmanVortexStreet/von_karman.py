@@ -11,13 +11,23 @@ from modulus.PDES import NavierStokes, IntegralContinuity
 from modulus.controller import ModulusController
 from math import sqrt
 
+# TODO add time, add criteria (relative error), change network size and types and such, compare to fenics
+
+
 # params for domain
-height = 0.1
-width = 0.5
-radius = 0.01
+height = 0.2
+width = 0.4
+radius = 0.02
 circle_pos = (-width/4, 0)
 vel = 1.0
 boundary = ((-width / 2, -height / 2), (width / 2, height / 2))
+
+# fluid params
+viscosity = 4.0e-4
+
+
+re = int((radius*2)/viscosity) # Reynolds Number
+
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -30,30 +40,24 @@ plane2 = Line((boundary[0][0]+0.2, boundary[0][1]),(boundary[0][0]+0.2, boundary
 plane3 = Line((boundary[0][0]+0.3, boundary[0][1]),(boundary[0][0]+0.3, boundary[1][1]), 1)
 plane4 = Line((boundary[0][0]+0.4, boundary[0][1]),(boundary[0][0]+0.4, boundary[1][1]), 1)
 
-
-
 # define sympy varaibles to parametize domain curves
-x, y = Symbol('x'), Symbol('y')
+x, y, t_symbol = Symbol('x'), Symbol('y'), Symbol('t')
+time_range = {t_symbol: (0, 10)}
 
-class KarmanTrain(TrainDomain):
+
+class VKVSTrain(TrainDomain):
   def __init__(self, **config):
-    super(KarmanTrain, self).__init__()
-
-    #top wall
-    #topWall = geo.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
-    #                          batch_size_per_area=10000,
-    #                          lambda_sympy={'lambda_u': 1.0 - 20 * Abs(x),  # weight edges to be zero
-    #                                        'lambda_v': 1.0},
-    #                          criteria=Eq(y, height / 2))
-    #self.add(topWall, name="TopWall")
+    super(VKVSTrain, self).__init__()
 
     # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
-                          batch_size_per_area=10000,
-                          lambda_sympy={'lambda_u': 1.0 - 20 * Abs(y),  # weight edges to be zero
+                          batch_size_per_area=5000,
+                          lambda_sympy={'lambda_u': 1.0 - ((2 * Abs(y)) / height),  # weight edges to be zero
                                          'lambda_v': 1.0},
-                          criteria=Eq(x, -width / 2))
+                          criteria=Eq(x, -width / 2),
+                          param_ranges=time_range)
     self.add(leftWall, name="leftWall")
+
     """
     noSlipBC = geo.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=10000,
@@ -63,25 +67,29 @@ class KarmanTrain(TrainDomain):
 
     # no slip top wall
     topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                 batch_size_per_area=10000,
-                                 criteria=Eq(y, height / 2))
+                                 batch_size_per_area=5000,
+                                 criteria=Eq(y, height / 2),
+                                 param_ranges=time_range)
     self.add(topWall, name="topWallNoSlip")
 
     # no slip bottom wall
     bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                 batch_size_per_area=10000,
-                                 criteria=Eq(y, -height / 2))
+                                 batch_size_per_area=5000,
+                                 criteria=Eq(y, -height / 2),
+                                 param_ranges=time_range)
     self.add(bottomWall, name="bottomWallNoSlip")
 
     # circle no slip
     circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                 batch_size_per_area=10000,)
+                                 batch_size_per_area=5000,
+                                 param_ranges=time_range)
     self.add(circleBC, name="circleNoSlip")
 
     # right wall outlet 0 pressure
     rightWall = rec.boundary_bc(outvar_sympy={'p' : 0},
-                          batch_size_per_area=10000,
-                          criteria=Eq(x, width / 2))
+                          batch_size_per_area=5000,
+                          criteria=Eq(x, width / 2),
+                          param_ranges=time_range)
     self.add(rightWall, name="rightWall")
 
     # interior
@@ -93,7 +101,8 @@ class KarmanTrain(TrainDomain):
                                              'lambda_momentum_y': geo.sdf},
                                #criteria=(sqrt((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius) ,
                                #criteria=((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius**2,
-                               batch_size_per_area=400000)
+                               batch_size_per_area=200000,
+                               param_ranges=time_range)
     self.add(interior, name="Interior")
 
     """
@@ -136,24 +145,24 @@ class KarmanTrain(TrainDomain):
     """
 
 
-class KarmanVal(ValidationDomain):
+class VKVSVal(ValidationDomain):
   def __init__(self, **config):
-    super(KarmanVal, self).__init__()
+    super(VKVSVal, self).__init__()
     #val = Validation.from_numpy(openfoam_invar_numpy, openfoam_outvar_numpy)
     #self.add(val, name='Val')
 
 
-class KarmanInference(InferenceDomain):
+class VKVSInference(InferenceDomain):
   def __init__(self,**config):
-    super(KarmanInference,self).__init__()
+    super(VKVSInference,self).__init__()
     #save entire domain
-    interior = Inference(geo.sample_interior(1e06, bounds={x: (-width/2, width/2), y: (-height/2, height/2)}), ['u','v','p'])
+    interior = Inference(geo.sample_interior(1e5, bounds={x: (-width/2, width/2), y: (-height/2, height/2)}), ['u','v','p'])
     self.add(interior, name="Inference")
 
 
-class KarmanMonitor(MonitorDomain):
+class VKVSMonitor(MonitorDomain):
   def __init__(self, **config):
-    super(KarmanMonitor, self).__init__()
+    super(VKVSMonitor, self).__init__()
     # metric for mass imbalance, momentum imbalance and peak velocity magnitude
     #global_monitor = Monitor(geo.sample_interior(400000, bounds={x: (-width/2, width/2), y: (-height/2, height/2)}),
     #                         {'mass_imbalance': lambda var: tf.reduce_sum(var['area']*tf.abs(var['continuity'])),
@@ -167,25 +176,26 @@ class KarmanMonitor(MonitorDomain):
     self.add(force, 'Force')
 
 
-class KarmanSolver(Solver):
-  train_domain = KarmanTrain
-  #val_domain = KarmanVal
-  inference_domain = KarmanInference
-  monitor_domain = KarmanMonitor
+class VKVSSolver(Solver):
+  train_domain = VKVSTrain
+  #val_domain = VKVSVal
+  inference_domain = VKVSInference
+  #monitor_domain = VKVSMonitor
 
   def __init__(self, **config):
-    super(KarmanSolver, self).__init__(**config)
-    self.equations = (NavierStokes(nu=0.001, rho=1.0, dim=2, time=False).make_node())
+    super(VKVSSolver, self).__init__(**config)
+    self.equations = (NavierStokes(nu=viscosity, rho=1.0, dim=2, time=True).make_node())
                       #+ IntegralContinuity().make_node())
     flow_net = self.arch.make_node(name='flow_net',
-                                   inputs=['x', 'y'],
+                                   inputs=['x', 'y', 't'],
                                    outputs=['u', 'v', 'p'])
     self.nets = [flow_net]
 
   @classmethod
   def update_defaults(cls, defaults):
     defaults.update({
-        'network_dir': './network_checkpoint_von_karman',
+        'layer_size': 256,
+        'network_dir': './network_checkpoint_vkvs_re' + str(re),
         #'save_filetypes': 'csv,vtk,np',
         'decay_steps': 4000,
         'max_steps': 400000
@@ -193,5 +203,5 @@ class KarmanSolver(Solver):
 
 
 if __name__ == '__main__':
-  ctr = ModulusController(KarmanSolver)
+  ctr = ModulusController(VKVSSolver)
   ctr.run()
