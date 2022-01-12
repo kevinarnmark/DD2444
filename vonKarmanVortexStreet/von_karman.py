@@ -198,7 +198,8 @@ class VKVSSolver(Solver):
         'network_dir': './network_checkpoint_vkvs_re' + str(re),
         #'save_filetypes': 'csv,vtk,np',
         'decay_steps': 4000,
-        'max_steps': 400000
+        'max_steps': 400000,
+        'rec_results_cpu': True # New untested...
     })
 
 
