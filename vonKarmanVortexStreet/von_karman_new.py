@@ -12,6 +12,7 @@ from modulus.variables import Variables, Key
 from modulus.pdes import PDES
 from modulus.node import Node
 
+"""
 # params for domain
 height = 0.2
 width = 0.4
@@ -24,6 +25,19 @@ bounds_y = (-height / 2, height / 2)
 
 # fluid params
 nu = 4.0e-4
+"""
+# params for domain
+height = 2.0
+width = 4.0
+radius = 0.2
+circle_pos = (-width/4, 0)
+vel = 1.0
+boundary = ((0, 0), (width, height))
+bounds_x = (0, width)
+bounds_y = (0, height)
+
+# fluid params
+nu = 4.0e-3
 
 
 re = int((radius*2)/nu) # Reynolds Number
@@ -34,25 +48,28 @@ rec = Rectangle(boundary[0], boundary[1])
 circle = Circle(circle_pos, radius)
 geo = rec - circle
 
+"""
 # Continuity lines
 plane1 = Line((boundary[0][0]+0.1, boundary[0][1]),(boundary[0][0]+0.1, boundary[1][1]), 1)
 plane2 = Line((boundary[0][0]+0.2, boundary[0][1]),(boundary[0][0]+0.2, boundary[1][1]), 1)
 plane3 = Line((boundary[0][0]+0.3, boundary[0][1]),(boundary[0][0]+0.3, boundary[1][1]), 1)
 plane4 = Line((boundary[0][0]+0.4, boundary[0][1]),(boundary[0][0]+0.4, boundary[1][1]), 1)
-
+"""
 # define sympy variables to parametrize domain curves
 x, y = Symbol('x'), Symbol('y')
 
 # param range
+total_nr_iterations = 20
+
 # time window size
-time_window_size = 0.5
+time_window_size = 30/total_nr_iterations
 
 # time domain
 t_symbol = Symbol('t')
 time_range = (0, time_window_size)
 param_ranges = {t_symbol: time_range}
 
-class ICTrain(TrainDomain):
+class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
   name = 'initial_conditions'
   nr_iterations = 1
 
@@ -125,7 +142,7 @@ class ICTrain(TrainDomain):
 
 class IterativeTrain(TrainDomain):
   name = 'iteration'
-  nr_iterations = 19
+  nr_iterations = total_nr_iterations - 1
 
   def __init__(self, **config):
     super(IterativeTrain, self).__init__()
@@ -145,7 +162,7 @@ class IterativeTrain(TrainDomain):
     # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                           batch_size_per_area=batch_size,
-                          lambda_sympy={'lambda_u': 1.0 - ((2 * abs(y)) / height),  # weight edges to be zero
+                          lambda_sympy={'lambda_u': 1.0 - ((2 * abs(y)) / height),  # weight edges to be zero TODO set same as dolfin maybe
                                          'lambda_v': 1.0},
                           criteria=Eq(x, -width / 2),
                           param_ranges=param_ranges)
