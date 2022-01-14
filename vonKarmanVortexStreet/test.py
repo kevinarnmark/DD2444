@@ -246,6 +246,7 @@ class VKVSSolver(Solver):
   seq_train_domain = [ICTrain, IterativeTrain]
   iterative_train_domain = IterativeTrain
   inference_domain = VKVSInference
+  
 
   def __init__(self, **config):
     super(VKVSSolver, self).__init__(**config)
@@ -332,8 +333,8 @@ class VKVSSolver(Solver):
     defaults.update({
         'network_dir': './network_checkpoint_test2_re' + str(re),
         'layer_size': 256,
-        'max_steps': 2000,
-        'decay_steps': 1000,
+        'max_steps': 5000,
+        'decay_steps': 2500,
         'xla': True
     })
 
