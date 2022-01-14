@@ -1,4 +1,5 @@
 from sympy import Symbol, Eq, Function, tanh, sin, cos, sqrt
+from time import perf_counter
 import tensorflow as tf
 import numpy as np
 
@@ -85,10 +86,11 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
                          batch_size_per_area=batch_size*8,
                          bounds={x: bounds_x,
                                  y: bounds_y},
-                         lambda_sympy={'lambda_u': 100,
-                                       'lambda_v': 100,
-                                       'lambda_p': 100},
-                         param_ranges={t_symbol: 0})
+                         lambda_sympy={'lambda_u': 10,
+                                       'lambda_v': 10,
+                                       'lambda_p': 10},
+                         param_ranges={t_symbol: 0},
+                         quasirandom=True)
     self.add(ic, name="ic")
     
    # left wall inlet
@@ -97,34 +99,39 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
                                lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero
                                              'lambda_v': 1.0},
                                criteria=Eq(x, bounds_x[0]),
-                               param_ranges=param_ranges)
+                               param_ranges=param_ranges,
+                               quasirandom=True)
     self.add(leftWall, name="leftWall")
 
     # no slip top wall
     topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[1]),
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                              quasirandom=True)
     self.add(topWall, name="topWallNoSlip")
 
     # no slip bottom wall
     bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[0]),
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                                 quasirandom=True)
     self.add(bottomWall, name="bottomWallNoSlip")
 
     # circle no slip
     circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                                  quasirandom=True)
     self.add(circleBC, name="circleNoSlip")
 
     # right wall outlet 0 pressure
     rightWall = rec.boundary_bc(outvar_sympy={'p' : 0},
                           batch_size_per_area=batch_size,
                           criteria=Eq(x, bounds_x[1]),
-                          param_ranges=param_ranges)
+                          param_ranges=param_ranges,
+                                quasirandom=True)
     self.add(rightWall, name="rightWall")
 
     # interior
@@ -137,7 +144,8 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
                                #criteria=(sqrt((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius) ,
                                #criteria=((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius**2,
                                batch_size_per_area=batch_size*8,
-                               param_ranges=param_ranges)
+                               param_ranges=param_ranges,
+                               quasirandom=True)
     self.add(interior, name="Interior")
 
 
@@ -150,14 +158,15 @@ class IterativeTrain(TrainDomain):
     batch_size = 16
     ic = geo.interior_bc(outvar_sympy={'u_ic': 0,
                                        'v_ic': 0,
-                                       'p_ic': 0}, #TODO set correct batch_size
+                                       'p_ic': 0},
                          batch_size_per_area=batch_size*8,
                          bounds={x: bounds_x,
                                  y: bounds_y},
-                         lambda_sympy={'lambda_u_ic': 100,
-                                       'lambda_v_ic': 100,
-                                       'lambda_p_ic': 100},
-                         param_ranges={t_symbol: 0})
+                         lambda_sympy={'lambda_u_ic': 10,
+                                       'lambda_v_ic': 10,
+                                       'lambda_p_ic': 10},
+                         param_ranges={t_symbol: 0},
+                         quasirandom=True)
     self.add(ic, name="IterativeIC")
 
     # left wall inlet
@@ -166,34 +175,39 @@ class IterativeTrain(TrainDomain):
                           lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero TODO set same as dolfin maybe
                                         'lambda_v': 1.0},
                           criteria=Eq(x, bounds_x[0]),
-                          param_ranges=param_ranges)
+                          param_ranges=param_ranges,
+                               quasirandom=True)
     self.add(leftWall, name="IterativeleftWall")
 
     # no slip top wall
     topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[1]),
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                              quasirandom=True)
     self.add(topWall, name="IterativetopWallNoSlip")
 
     # no slip bottom wall
     bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[0]),
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                                 quasirandom=True)
     self.add(bottomWall, name="IterativebottomWallNoSlip")
 
     # circle no slip
     circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
-                                 param_ranges=param_ranges)
+                                 param_ranges=param_ranges,
+                                  quasirandom=True)
     self.add(circleBC, name="IterativecircleNoSlip")
 
     # right wall outlet 0 pressure
     rightWall = rec.boundary_bc(outvar_sympy={'p' : 0},
                           batch_size_per_area=batch_size,
                           criteria=Eq(x, bounds_x[1]),
-                          param_ranges=param_ranges)
+                          param_ranges=param_ranges,
+                                quasirandom=True)
     self.add(rightWall, name="IterativerightWall")
 
     # interior
@@ -206,7 +220,8 @@ class IterativeTrain(TrainDomain):
                                #criteria=(sqrt((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius) ,
                                #criteria=((x - circle_pos[0])**2 + (y - circle_pos[1])**2) > radius**2,
                                batch_size_per_area=batch_size*8,
-                               param_ranges=param_ranges)
+                               param_ranges=param_ranges,
+                               quasirandom=True)
     self.add(interior, name="IterativeInterior")
 
 
@@ -246,7 +261,7 @@ class VKVSSolver(Solver):
   seq_train_domain = [ICTrain, IterativeTrain]
   iterative_train_domain = IterativeTrain
   inference_domain = VKVSInference
-  
+
 
   def __init__(self, **config):
     super(VKVSSolver, self).__init__(**config)
@@ -340,4 +355,7 @@ class VKVSSolver(Solver):
 
 if __name__ == '__main__':
   ctr = ModulusController(VKVSSolver)
+  bench_start_time = perf_counter()
   ctr.run()
+  bench_end_time = perf_counter()
+  print("Elapsed time: " + str(bench_end_time - bench_start_time))
