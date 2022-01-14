@@ -349,8 +349,8 @@ class VKVSSolver(Solver):
     defaults.update({
         'network_dir': './network_checkpoint_test2_re' + str(re),
         'layer_size': 256,
-        'max_steps': 5000,
-        'decay_steps': 2500,
+        'max_steps': 3000,
+        'decay_steps': 1500,
         'xla': True,
         'adaptive_activations': False
     })
