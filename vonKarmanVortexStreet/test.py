@@ -97,7 +97,7 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
    # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                                batch_size_per_area=batch_size,
-                               lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero
+                               lambda_sympy={'lambda_u': 1.0 - ((2.0*abs(y-1.0))/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero
                                              'lambda_v': 1.0},
                                criteria=Eq(x, bounds_x[0]),
                                param_ranges=param_ranges,
@@ -173,7 +173,7 @@ class IterativeTrain(TrainDomain):
     # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                           batch_size_per_area=batch_size,
-                          lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero TODO set same as dolfin maybe
+                          lambda_sympy={'lambda_u': 1.0 - ((2.0*abs(y-1.0))/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero TODO set same as dolfin maybe
                                         'lambda_v': 1.0},
                           criteria=Eq(x, bounds_x[0]),
                           param_ranges=param_ranges,
@@ -351,7 +351,8 @@ class VKVSSolver(Solver):
         'layer_size': 256,
         'max_steps': 5000,
         'decay_steps': 2500,
-        'xla': True
+        'xla': True,
+        'adaptive_activations': False
     })
 
 if __name__ == '__main__':
