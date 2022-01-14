@@ -30,7 +30,7 @@ nu = 4.0e-4
 height = 2.0
 width = 4.0
 radius = 0.2
-circle_pos = (width/4, height / 2)
+circle_pos = (width/4, height/2)
 vel = 1.0
 boundary = ((0, 0), (width, height))
 bounds_x = (0, width)
@@ -62,7 +62,8 @@ x, y = Symbol('x'), Symbol('y')
 total_nr_iterations = 20
 
 # time window size
-time_window_size = 30/total_nr_iterations
+time_window_size = 30/total_nr_iterations # TODO total_nr_iterations - 1? Depending on if the initial is one window
+                                             # TODO or if iteration 0000 is the first time window
 
 # time domain
 t_symbol = Symbol('t')
@@ -76,7 +77,7 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
 
   def __init__(self, **config):
     super(ICTrain, self).__init__()
-    batch_size = 64
+    batch_size = 16
     
     ic = geo.interior_bc(outvar_sympy={'u': 0,
                                        'v': 0,
@@ -90,13 +91,13 @@ class ICTrain(TrainDomain): # TODO change all bc to fit with new and old bounds
                          param_ranges={t_symbol: 0})
     self.add(ic, name="ic")
     
-    # left wall inlet
+   # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
-                          batch_size_per_area=batch_size,
-                          lambda_sympy={'lambda_u': 1.0 - ((2 * abs(y)) / height),  # weight edges to be zero
-                                         'lambda_v': 1.0},
-                          criteria=Eq(x, bounds_x[0]),
-                          param_ranges=param_ranges)
+                               batch_size_per_area=batch_size,
+                               lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero
+                                             'lambda_v': 1.0},
+                               criteria=Eq(x, bounds_x[0]),
+                               param_ranges=param_ranges)
     self.add(leftWall, name="leftWall")
 
     # no slip top wall
@@ -146,7 +147,7 @@ class IterativeTrain(TrainDomain):
 
   def __init__(self, **config):
     super(IterativeTrain, self).__init__()
-    batch_size = 64
+    batch_size = 16
     ic = geo.interior_bc(outvar_sympy={'u_ic': 0,
                                        'v_ic': 0,
                                        'p_ic': 0}, #TODO set correct batch_size
@@ -162,38 +163,38 @@ class IterativeTrain(TrainDomain):
     # left wall inlet
     leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                           batch_size_per_area=batch_size,
-                          lambda_sympy={'lambda_u': 1.0 - ((2 * abs(y)) / height),  # weight edges to be zero
+                          lambda_sympy={'lambda_u': 1.0 - (2.0*abs(y-1.0)/2.0), #(2.0/height) - (((4/height) * abs(y-bounds_y[1]-(height/2))) / height),  # weight edges to be zero TODO set same as dolfin maybe
                                         'lambda_v': 1.0},
                           criteria=Eq(x, bounds_x[0]),
                           param_ranges=param_ranges)
-    self.add(leftWall, name="leftWall")
+    self.add(leftWall, name="IterativeleftWall")
 
     # no slip top wall
     topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[1]),
                                  param_ranges=param_ranges)
-    self.add(topWall, name="topWallNoSlip")
+    self.add(topWall, name="IterativetopWallNoSlip")
 
     # no slip bottom wall
     bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  criteria=Eq(y, bounds_y[0]),
                                  param_ranges=param_ranges)
-    self.add(bottomWall, name="bottomWallNoSlip")
+    self.add(bottomWall, name="IterativebottomWallNoSlip")
 
     # circle no slip
     circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
                                  batch_size_per_area=batch_size,
                                  param_ranges=param_ranges)
-    self.add(circleBC, name="circleNoSlip")
+    self.add(circleBC, name="IterativecircleNoSlip")
 
     # right wall outlet 0 pressure
     rightWall = rec.boundary_bc(outvar_sympy={'p' : 0},
                           batch_size_per_area=batch_size,
                           criteria=Eq(x, bounds_x[1]),
                           param_ranges=param_ranges)
-    self.add(rightWall, name="rightWall")
+    self.add(rightWall, name="IterativerightWall")
 
     # interior
     interior = geo.interior_bc(outvar_sympy={'continuity': 0, 'momentum_x': 0, 'momentum_y': 0},
@@ -264,7 +265,7 @@ class VKVSSolver(Solver):
       outvar = Variables()
       outvar['u_ic'] = invar['u'] - tf.stop_gradient(invar['u_prev_step'])
       outvar['v_ic'] = invar['v'] - tf.stop_gradient(invar['v_prev_step'])
-      #outvar['w_ic'] = invar['w'] - tf.stop_gradient(invar['w_prev_step'])
+      # outvar['w_ic'] = invar['w'] - tf.stop_gradient(invar['w_prev_step'])
       outvar['p_ic'] = invar['p'] - tf.stop_gradient(invar['p_prev_step'])
       return outvar
 
@@ -329,11 +330,11 @@ class VKVSSolver(Solver):
   @classmethod
   def update_defaults(cls, defaults):
     defaults.update({
-        'network_dir': './network_checkpoint_re' + str(re),
+        'network_dir': './network_checkpoint_test2_re' + str(re),
         'layer_size': 256,
-        'max_steps': 300000,
-        'decay_steps': 3000,
-        'xla': True,
+        'max_steps': 2000,
+        'decay_steps': 1000,
+        'xla': True
     })
 
 if __name__ == '__main__':
