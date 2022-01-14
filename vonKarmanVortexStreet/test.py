@@ -12,6 +12,7 @@ from modulus.controller import ModulusController
 from modulus.variables import Variables, Key
 from modulus.pdes import PDES
 from modulus.node import Node
+from modulus.architecture import ModifiedFourierNetArch
 
 """
 # params for domain
@@ -258,10 +259,10 @@ class VKVSInference(InferenceDomain):
     """
 
 class VKVSSolver(Solver):
-  seq_train_domain = [ICTrain, IterativeTrain]
-  iterative_train_domain = IterativeTrain
-  inference_domain = VKVSInference
-
+  seq_train_domain          = [ICTrain, IterativeTrain]
+  iterative_train_domain    = IterativeTrain
+  inference_domain          = VKVSInference
+  arch                      = ModifiedFourierNetArch
 
   def __init__(self, **config):
     super(VKVSSolver, self).__init__(**config)
