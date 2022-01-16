@@ -40,6 +40,10 @@ import dolfin.common.plotting as fenicsplot
 
 from matplotlib import pyplot as plt
 
+from os import mkdir
+
+mkdir('results-NS')
+
 # Define rectangular domain 
 L = 4
 H = 2
