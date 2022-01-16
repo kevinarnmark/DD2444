@@ -269,6 +269,7 @@ class VKVSSolver(Solver):
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
     #arch = ModifiedFourierNetArch
+    convergence_check = 1.0e-3
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -278,7 +279,6 @@ class VKVSSolver(Solver):
                                            initializer=tf.constant_initializer(0),
                                            trainable=False,
                                            dtype=tf.float32)
-        self.convergence_check = 1.0e-3
 
         def slide_time_window(invar):
             outvar = Variables()

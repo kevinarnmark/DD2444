@@ -32,6 +32,7 @@ except:
 
 
 class Solver2(Solver):
+    convergence_check = 1.0e-5
 
     @classmethod
     def add_options(cls, group):
