@@ -96,8 +96,9 @@ lower.mark(boundaries, 3)
 upper.mark(boundaries, 4)
 
 plt.figure()
-plot(mesh)
-plt.show()
+plot(mesh, title='mesh')
+#plt.show()
+plt.savefig('mesh.png')
 
 # Generate finite element spaces (for velocity and pressure)
 V = VectorFunctionSpace(mesh, "Lagrange", 1)
@@ -250,6 +251,15 @@ start_sample_time = 1.0
 #!rm results-NS/*
 
 print("Reynolds Number = ", (uin*rc*2)/nu)
+
+# Print initial conditions
+plt.figure()
+plot(u0, title="IC Velocity")
+plt.savefig('ic_vel.png')
+
+plt.figure()
+plot(p0, title="IC Pressure")
+plt.savefig('ic_pre.png')
 
 # Time stepping 
 T = 30
