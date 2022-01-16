@@ -283,7 +283,7 @@ class Solver2(Solver):
                         if hvd.rank() == 0:
                             print("finished training! convergence reached")
                         break
-                        
+
                     #if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
                     if train_stats['step'] >= self.max_steps:
                         if hvd.rank() == 0:
