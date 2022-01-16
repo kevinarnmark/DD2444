@@ -28,7 +28,7 @@ bounds_y = (-height / 2, height / 2)
 # fluid params
 nu = 4.0e-4
 """
-directory = './network_checkpoint_test2_re'
+
 
 # params for domain
 height = 2.0
@@ -44,6 +44,7 @@ bounds_y = (0, height)
 nu = 2.0e-3  # 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
+directory = './network_checkpoint_test4_re' + str(re)  # Results directory
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -352,7 +353,7 @@ class VKVSSolver(Solver):
     @classmethod
     def update_defaults(cls, defaults):
         defaults.update({
-            'network_dir': './network_checkpoint_test2_re' + str(re),
+            'network_dir': directory,
             'layer_size': 256,
             'max_steps': 10000,
             'decay_steps': 3000,
