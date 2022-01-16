@@ -33,6 +33,13 @@ except:
 
 class Solver2(Solver):
 
+    @classmethod
+    def add_options(cls, group):
+        group.add_argument('--convergence_check',
+                           help='total loss convergence check',
+                           type=float,
+                           default=1.0e-5)
+
     def solve(self):
         # start tensorflow session
         self.start_session()
