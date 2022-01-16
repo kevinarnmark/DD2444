@@ -3,7 +3,7 @@ from time import perf_counter
 import tensorflow as tf
 import numpy as np
 
-from modulus.solver import Solver
+from newSolver import Solver2 as Solver #from modulus.solver import Solver
 from modulus.dataset import TrainDomain, ValidationDomain, MonitorDomain, InferenceDomain
 from modulus.data import Validation, Monitor, BC, Inference
 from modulus.sympy_utils.geometry_2d import Rectangle, Circle, Line
@@ -41,7 +41,7 @@ bounds_x = (0, width)
 bounds_y = (0, height)
 
 # fluid params
-nu = 4.0e-3
+nu = 2.0e-3  # 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
 
@@ -61,7 +61,7 @@ plane4 = Line((boundary[0][0]+0.4, boundary[0][1]),(boundary[0][0]+0.4, boundary
 x, y = Symbol('x'), Symbol('y')
 
 # param range
-total_nr_iterations = 20
+total_nr_iterations = 60
 
 # time window size
 time_window_size = 30 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
@@ -266,7 +266,7 @@ class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    arch = ModifiedFourierNetArch
+    #arch = ModifiedFourierNetArch
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -357,7 +357,8 @@ class VKVSSolver(Solver):
             'max_steps': 3000,
             'decay_steps': 1500,
             'xla': True,
-            'adaptive_activations': False
+            'adaptive_activations': False,
+            'convergence_check': 1.0e-3
         })
 
 
