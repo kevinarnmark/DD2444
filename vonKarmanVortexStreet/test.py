@@ -1,5 +1,6 @@
 from sympy import Symbol, Eq, Function, tanh, sin, cos, sqrt
 from time import perf_counter
+from os import mkdir
 import tensorflow as tf
 import numpy as np
 
@@ -364,7 +365,12 @@ class VKVSSolver(Solver):
 
 
 if __name__ == '__main__':
-    f = open(directory + '/benchmark_data.txt', 'x')
+    try:
+        mkdir(directory)
+    except:
+        print("Directory already exists")
+
+    f = open(directory + '/benchmark_data.txt', 'w')
     ctr = ModulusController(VKVSSolver)
     bench_start_time = perf_counter()
     ctr.run()
