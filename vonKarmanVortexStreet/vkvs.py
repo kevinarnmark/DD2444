@@ -8,7 +8,7 @@ from newSolver import Solver2 as Solver #from modulus.solver import Solver
 from modulus.dataset import TrainDomain, ValidationDomain, MonitorDomain, InferenceDomain
 from modulus.data import Validation, Monitor, BC, Inference
 from modulus.sympy_utils.geometry_2d import Rectangle, Circle, Line
-from modulus.PDES.navier_stokes import NavierStokes, ZeroEquation
+from modulus.PDES import NavierStokes, ZeroEquation
 from modulus.controller import ModulusController
 from modulus.variables import Variables, Key
 from modulus.pdes import PDES
