@@ -279,11 +279,18 @@ class Solver2(Solver):
                                              iteration_index=iteration_index)
                         print("saved to " + self.base_dir(domain_index, iteration_index))
 
-                    if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
-                    #if train_stats['step'] >= self.max_steps:
+                    if train_stats['total_loss'] < self.convergence_check:
                         if hvd.rank() == 0:
-                            print("finished training!")
+                            print("finished training! convergence reached")
                         break
+                        
+                    #if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
+                    if train_stats['step'] >= self.max_steps:
+                        if hvd.rank() == 0:
+                            print("finished training! max steps reached")
+                        break
+
+
 
                 # run user given operation to update weights
                 if custom_update_op is not None:
