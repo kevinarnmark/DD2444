@@ -98,7 +98,7 @@ upper.mark(boundaries, 4)
 plt.figure()
 plot(mesh, title='mesh')
 #plt.show()
-plt.savefig('mesh.png')
+plt.savefig('results-NS/mesh.png')
 
 # Generate finite element spaces (for velocity and pressure)
 V = VectorFunctionSpace(mesh, "Lagrange", 1)
@@ -235,6 +235,9 @@ normalization = -2.0/(D*(uin**2))
 file_u = File("results-NS/u.pvd")
 file_p = File("results-NS/p.pvd")
 
+file_u_ic = File("results-NS/u_ic.pvd")
+file_p_ic = File("results-NS/p_ic.pvd")
+
 # Set plot frequency
 plot_time = 0
 plot_freq = 10
@@ -255,11 +258,14 @@ print("Reynolds Number = ", (uin*rc*2)/nu)
 # Print initial conditions
 plt.figure()
 plot(u0, title="IC Velocity")
-plt.savefig('ic_vel.png')
+plt.savefig('results-NS/ic_vel.png')
 
 plt.figure()
-plot(p0, title="IC Pressure")
-plt.savefig('ic_pre.png')
+plot(p0, title="IC Pressure", scalarbar=True)
+plt.savefig('results-NS/ic_pre.png')
+
+file_u_ic << u0
+file_p_ic << p0
 
 # Time stepping 
 T = 30
