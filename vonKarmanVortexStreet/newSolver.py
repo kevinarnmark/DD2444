@@ -220,16 +220,17 @@ class Solver2(Solver):
                 t = time.time()
 
                 first = True
-                initial_loss = 0.0  # Used to calc relative loss
+                initial_loss = 0.0  # Used to calc relative loss used in early termination
 
                 while True:
                     train_np_var = self.seq_train_domain[domain_index].sample()
                     train_stats = seq_train_step[domain_index](train_np_var)
 
-                    if first: # Get initial total loss for use in relative loss for convergence
+                    if first: # Get initial total loss for use in relative loss for early termination
                         first = False
                         initial_loss = train_stats['total_loss']
                         print("Initial total loss: " + str(initial_loss))
+                        print("total loss object type: " + str(train_stats['total_loss'].type()))
 
                     # check for nans in loss
                     if (hvd.rank() == 0):
@@ -295,13 +296,11 @@ class Solver2(Solver):
                                   + " has been reached")
                         break
 
-                    #if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
+                    # if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
                     if train_stats['step'] >= self.max_steps:
                         if hvd.rank() == 0:
                             print("Finished training! Max number of steps reached")
                         break
-
-
 
                 # run user given operation to update weights
                 if custom_update_op is not None:

@@ -250,7 +250,7 @@ class VKVSSolver(Solver):
             outvar['p_ic'] = invar['p'] - tf.stop_gradient(invar['p_prev_step'])
             return outvar
 
-        self.equations = (NavierStokes(nu='nu', rho=1, dim=2, time=True).make_node()
+        self.equations = (NavierStokes(nu=nu, rho=1, dim=2, time=True).make_node()
                           # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
                           #+ ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
                           #+ [Node.from_sympy(geo.sdf, 'normal_distance')]
