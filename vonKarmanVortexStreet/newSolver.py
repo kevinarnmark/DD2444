@@ -226,6 +226,7 @@ class Solver2(Solver):
                     train_np_var = self.seq_train_domain[domain_index].sample()
                     train_stats = seq_train_step[domain_index](train_np_var)
 
+                    total_loss = train_stats['total_loss']
                     if first: # Get initial total loss for use in relative loss for early termination
                         first = False
                         initial_loss = train_stats['total_loss']
@@ -288,11 +289,11 @@ class Solver2(Solver):
                                              iteration_index=iteration_index)
                         print("saved to " + self.base_dir(domain_index, iteration_index))
 
-                    if (train_stats['total_loss']/initial_loss) < self.convergence_check:
+                    if (total_loss/initial_loss) < self.convergence_check:
                         if hvd.rank() == 0:
-                            print("Debug: " + str(train_stats['total_loss']) + " / " + str(initial_loss))
+                            print("Debug: " + str(total_loss) + " / " + str(initial_loss))
                             print("Finished training! Relative loss of "
-                                  + str(train_stats['total_loss']/initial_loss)
+                                  + str(total_loss/initial_loss)
                                   + " has been reached")
                         break
 
