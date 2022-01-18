@@ -67,9 +67,9 @@ class ICTrain(TrainDomain):
                              batch_size_per_area=batch_size * 8,
                              bounds={x: bounds_x,
                                      y: bounds_y},
-                             lambda_sympy={'lambda_u': 10,
-                                           'lambda_v': 10,
-                                           'lambda_p': 10},
+                             lambda_sympy={'lambda_u': 100,
+                                           'lambda_v': 100,
+                                           'lambda_p': 100},
                              param_ranges={t_symbol: 0},
                              quasirandom=True)
         self.add(ic, name="ic")
@@ -77,7 +77,7 @@ class ICTrain(TrainDomain):
         # left wall inlet
         leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                                    batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
+                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
                                    param_ranges=param_ranges,
@@ -141,9 +141,9 @@ class IterativeTrain(TrainDomain):
                              batch_size_per_area=batch_size * 8,
                              bounds={x: bounds_x,
                                      y: bounds_y},
-                             lambda_sympy={'lambda_u_ic': 10,
-                                           'lambda_v_ic': 10,
-                                           'lambda_p_ic': 10},
+                             lambda_sympy={'lambda_u_ic': 100,
+                                           'lambda_v_ic': 100,
+                                           'lambda_p_ic': 100},
                              param_ranges={t_symbol: 0},
                              quasirandom=True)
         self.add(ic, name="IterativeIC")
@@ -151,7 +151,7 @@ class IterativeTrain(TrainDomain):
         # left wall inlet
         leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
                                    batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
+                                   lambda_sympy={'lambda_u':  1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
                                    param_ranges=param_ranges,
@@ -231,7 +231,7 @@ class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    #arch = ModifiedFourierNetArch
+    arch = ModifiedFourierNetArch
     convergence_check = 1.0e-4
 
     def __init__(self, **config):
@@ -303,7 +303,7 @@ class VKVSSolver(Solver):
             'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
-            #'adaptive_activations': True,
+            'adaptive_activations': True,
             'save_filetypes': 'vtk'
             #'convergence_check': 5.0e-3
         })
