@@ -41,10 +41,10 @@ geo = rec - circle
 x, y = Symbol('x'), Symbol('y')
 
 # param range
-total_nr_iterations = 15
+total_nr_iterations = 12
 
 # time window size
-time_window_size = 15 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
+time_window_size = 6 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
 # TODO or if iteration 0000 is the first time window
 
 # time domain
@@ -251,8 +251,8 @@ class VKVSSolver(Solver):
             return outvar
 
         self.equations = (NavierStokes(nu='nu', rho=1, dim=2, time=True).make_node()
-                          + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
-                          # + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
+                          # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
+                          + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
                           + [Node.from_sympy(geo.sdf, 'normal_distance')]
                           + [Node(make_ic_loss)]
                           + [Node(slide_time_window)])
