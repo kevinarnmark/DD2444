@@ -220,12 +220,18 @@ class VKVSInference(InferenceDomain):
             inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf, "Inference_" + str(i).zfill(4))
 
+        interior = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
+            interior['t'] = np.full_like(interior['x'], specific_t)
+            inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
+            self.add(inf, "NewInference_" + str(i).zfill(4))
+
 
 class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    arch = ModifiedFourierNetArch
+    #arch = ModifiedFourierNetArch
     convergence_check = 1.0e-4
 
     def __init__(self, **config):
@@ -297,7 +303,8 @@ class VKVSSolver(Solver):
             'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
-            'adaptive_activations': True
+            #'adaptive_activations': True,
+            'save_filetypes': 'vtk'
             #'convergence_check': 5.0e-3
         })
 

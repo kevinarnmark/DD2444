@@ -293,7 +293,7 @@ class Solver2(Solver):
                         if hvd.rank() == 0:
                             print("Debug: " + str(train_stats['total_loss']) + " / " + str(initial_loss))
                             print("Finished training! Relative loss of "
-                                  + str(train_stats['total_loss']/initial_loss)
+                                  + str(abs(train_stats['total_loss']/initial_loss))
                                   + " has been reached")
                         break
 
