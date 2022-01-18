@@ -220,7 +220,7 @@ class Solver2(Solver):
                 t = time.time()
 
                 first = True
-                initial_loss = 0.0  # Used to calc relative loss used in early termination
+                initial_loss = np.float32(0.0)  # Used to calc relative loss used in early termination
 
                 while True:
                     train_np_var = self.seq_train_domain[domain_index].sample()
@@ -230,7 +230,6 @@ class Solver2(Solver):
                         first = False
                         initial_loss = train_stats['total_loss']
                         print("Initial total loss: " + str(initial_loss))
-                        print("total loss object type: " + str(train_stats['total_loss'].type()))
 
                     # check for nans in loss
                     if (hvd.rank() == 0):
