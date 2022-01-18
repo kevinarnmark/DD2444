@@ -4,11 +4,11 @@ from os import mkdir
 import tensorflow as tf
 import numpy as np
 
-from newSolver import Solver2 as Solver #from modulus.solver import Solver
+from newSolver import Solver2 as Solver  # from modulus.solver import Solver
 from modulus.dataset import TrainDomain, ValidationDomain, MonitorDomain, InferenceDomain
 from modulus.data import Validation, Monitor, BC, Inference
 from modulus.sympy_utils.geometry_2d import Rectangle, Circle, Line
-from modulus.PDES import NavierStokes, ZeroEquation
+from modulus.PDES import NavierStokes, ZeroEquation, KEpsilon
 from modulus.controller import ModulusController
 from modulus.variables import Variables, Key
 from modulus.pdes import PDES
@@ -27,10 +27,10 @@ bounds_y = (0, height)
 max_distance = 2.0  # TODO check if this is correct
 
 # fluid params
-nu = 4.0e-3  # 4.0e-3
+nu = 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
-directory = './network_checkpoint_vkvs_zeroeq_re' + str(re)  # Results directory
+directory = './network_checkpoint_vkvs_ke_re' + str(re)  # Results directory
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -44,7 +44,7 @@ x, y = Symbol('x'), Symbol('y')
 total_nr_iterations = 15
 
 # time window size
-time_window_size = 30 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
+time_window_size = 15 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
 # TODO or if iteration 0000 is the first time window
 
 # time domain
@@ -59,7 +59,7 @@ class ICTrain(TrainDomain):
 
     def __init__(self, **config):
         super(ICTrain, self).__init__()
-        batch_size = 16
+        batch_size = 32
 
         ic = geo.interior_bc(outvar_sympy={'u': 0,
                                            'v': 0,
@@ -134,7 +134,7 @@ class IterativeTrain(TrainDomain):
 
     def __init__(self, **config):
         super(IterativeTrain, self).__init__()
-        batch_size = 16
+        batch_size = 32
         ic = geo.interior_bc(outvar_sympy={'u_ic': 0,
                                            'v_ic': 0,
                                            'p_ic': 0},
@@ -206,7 +206,7 @@ class VKVSInference(InferenceDomain):
     def __init__(self, **config):
         super(VKVSInference, self).__init__()
         # inf data time 0
-        res = 80
+        res = 128
         mesh_x, mesh_y = np.meshgrid(np.linspace(bounds_x[0], bounds_x[1], res),
                                      # TODO fix ranges and expand_dims(mesh.flatten())
                                      np.linspace(bounds_y[0], bounds_y[1], res),
@@ -225,8 +225,8 @@ class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    #arch = ModifiedFourierNetArch
-    convergence_check = 1.0e-3
+    # arch = ModifiedFourierNetArch
+    convergence_check = 5.0e-3
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -251,7 +251,8 @@ class VKVSSolver(Solver):
             return outvar
 
         self.equations = (NavierStokes(nu='nu', rho=1, dim=2, time=True).make_node()
-                          + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
+                          + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
+                          # + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
                           + [Node.from_sympy(geo.sdf, 'normal_distance')]
                           + [Node(make_ic_loss)]
                           + [Node(slide_time_window)])
@@ -293,11 +294,11 @@ class VKVSSolver(Solver):
         defaults.update({
             'network_dir': directory,
             'layer_size': 256,
-            'max_steps': 100000,
+            'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
             'adaptive_activations': False,
-            'convergence_check': 1.0e-3
+            'convergence_check': 5.0e-3
         })
 
 
