@@ -218,9 +218,18 @@ class Solver2(Solver):
                 print("Solving for Domain " + str(self.seq_train_domain[domain_index].name) + ' iteration ' + str(
                     iteration_index))
                 t = time.time()
+
+                first = True
+                initial_loss = 0.0  # Used to calc relative loss
+
                 while True:
                     train_np_var = self.seq_train_domain[domain_index].sample()
                     train_stats = seq_train_step[domain_index](train_np_var)
+
+                    if first: # Get initial total loss for use in relative loss for convergence
+                        first = False
+                        initial_loss = train_stats['total_loss']
+                        print("Initial total loss: " + str(initial_loss))
 
                     # check for nans in loss
                     if (hvd.rank() == 0):
@@ -279,15 +288,17 @@ class Solver2(Solver):
                                              iteration_index=iteration_index)
                         print("saved to " + self.base_dir(domain_index, iteration_index))
 
-                    if train_stats['total_loss'] < self.convergence_check:
+                    if (train_stats['total_loss']/initial_loss) < self.convergence_check:
                         if hvd.rank() == 0:
-                            print("finished training! convergence reached")
+                            print("Finished training! Relative loss of "
+                                  + str(train_stats['total_loss']/initial_loss)
+                                  + " has been reached")
                         break
 
                     #if (train_stats['step'] >= self.max_steps) or (train_stats['total_loss'] < self.convergence_check):
                     if train_stats['step'] >= self.max_steps:
                         if hvd.rank() == 0:
-                            print("finished training! max steps reached")
+                            print("Finished training! Max number of steps reached")
                         break
 
 

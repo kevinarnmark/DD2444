@@ -16,10 +16,10 @@ from modulus.node import Node
 from modulus.architecture import ModifiedFourierNetArch
 
 # params for domain
-height = 2.0
-width = 4.0
+height = 4.0  # 2.0
+width = 8.0  # 4.0
 radius = 0.2
-circle_pos = (width / 4, height / 2)
+circle_pos = (width / 8, height / 2)  # (width / 4, height / 2)
 vel = 1.0
 boundary = ((0, 0), (width, height))
 bounds_x = (0, width)
@@ -30,7 +30,7 @@ max_distance = 2.0  # TODO check if this is correct
 nu = 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
-directory = './network_checkpoint_vkvs_ke_re' + str(re)  # Results directory
+directory = './network_checkpoint_vkvs_re' + str(re)  # Results directory
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -225,8 +225,8 @@ class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    # arch = ModifiedFourierNetArch
-    convergence_check = 5.0e-3
+    arch = ModifiedFourierNetArch
+    convergence_check = 1.0e-4
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -252,8 +252,8 @@ class VKVSSolver(Solver):
 
         self.equations = (NavierStokes(nu='nu', rho=1, dim=2, time=True).make_node()
                           # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
-                          + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
-                          + [Node.from_sympy(geo.sdf, 'normal_distance')]
+                          #+ ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
+                          #+ [Node.from_sympy(geo.sdf, 'normal_distance')]
                           + [Node(make_ic_loss)]
                           + [Node(slide_time_window)])
 
@@ -297,8 +297,8 @@ class VKVSSolver(Solver):
             'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
-            'adaptive_activations': False,
-            'convergence_check': 5.0e-3
+            'adaptive_activations': True
+            #'convergence_check': 5.0e-3
         })
 
 
