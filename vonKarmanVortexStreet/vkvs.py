@@ -219,13 +219,14 @@ class VKVSInference(InferenceDomain):
             interior = {'x': mesh_x,
                         'y': mesh_y,
                         't': np.full_like(mesh_x, specific_t)}
+            print("DEBUG INFERENCE CORRECT: " + str(len(interior['x'])) + "," + str(len(interior['x'])) + ", " + str(len(interior['t'])))
             inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf, "Inference_" + str(i).zfill(4))
 
         interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
         print("DEBUG INFERENCE: " + str(len(interior2['x'])) + "," + str(len(interior2['x'])))
         for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
-            interior2['t'] = np.full_like(interior2['x'], specific_t) # TODO time does not work
+            interior2['t'] = np.full_like(interior2['x'], specific_t)  # TODO time does not work
             print("DEBUG INFERENCE: " + str(len(interior2['t'])))
             inf2 = Inference(interior2, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf2, "NewInference_" + str(i).zfill(4))
