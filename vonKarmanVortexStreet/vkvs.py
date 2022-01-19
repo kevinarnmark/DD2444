@@ -222,13 +222,13 @@ class VKVSInference(InferenceDomain):
             inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf, "Inference_" + str(i).zfill(4))
 
-        interior = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
-        print("DEBUG Inference x: " + str(interior['x']))
+        interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        print("DEBUG INFERENCE: " + str(len(interior2['x'])) + "," + str(len(interior2['x'])))
         for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
-            interior['t'] = np.full_like(interior['x'], specific_t) # TODO time does not work
-            print("DEBUG Inference time: " + str(interior['t']))
-            inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
-            self.add(inf, "NewInference_" + str(i).zfill(4))
+            interior2['t'] = np.full_like(interior2['x'], specific_t) # TODO time does not work
+            print("DEBUG INFERENCE: " + str(len(interior2['t'])))
+            inf2 = Inference(interior2, ['u', 'v', 'p', 'shifted_t'])
+            self.add(inf2, "NewInference_" + str(i).zfill(4))
 
 
 class VKVSSolver(Solver):
@@ -262,8 +262,8 @@ class VKVSSolver(Solver):
 
         self.equations = (NavierStokes(nu=nu, rho=1, dim=2, time=True).make_node()
                           # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
-                          #+ ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
-                          #+ [Node.from_sympy(geo.sdf, 'normal_distance')]
+                          # + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
+                          # + [Node.from_sympy(geo.sdf, 'normal_distance')]
                           + [Node(make_ic_loss)]
                           + [Node(slide_time_window)])
 
