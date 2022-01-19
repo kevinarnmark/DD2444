@@ -75,7 +75,7 @@ class ICTrain(TrainDomain):
         self.add(ic, name="ic")
 
         # left wall inlet
-        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
+        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
                                    lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0},
@@ -149,7 +149,7 @@ class IterativeTrain(TrainDomain):
         self.add(ic, name="IterativeIC")
 
         # left wall inlet
-        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
+        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
                                    lambda_sympy={'lambda_u':  1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0},
@@ -221,8 +221,10 @@ class VKVSInference(InferenceDomain):
             self.add(inf, "Inference_" + str(i).zfill(4))
 
         interior = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        print("DEBUG Inference x: " + str(interior['x']))
         for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
-            interior['t'] = np.full_like(interior['x'], specific_t)
+            interior['t'] = np.full_like(interior['x'], specific_t) # TODO time does not work
+            print("DEBUG Inference time: " + str(interior['t']))
             inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf, "NewInference_" + str(i).zfill(4))
 
