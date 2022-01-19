@@ -78,7 +78,8 @@ class ICTrain(TrainDomain):
         leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
                                    lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
-                                                 'lambda_v': 1.0},
+                                                 'lambda_v': 1.0,
+                                                 'lambda_p': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
                                    param_ranges=param_ranges,
                                    quasirandom=True)
@@ -152,7 +153,8 @@ class IterativeTrain(TrainDomain):
         leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
                                    lambda_sympy={'lambda_u':  1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
-                                                 'lambda_v': 1.0},
+                                                 'lambda_v': 1.0,
+                                                 'lambda_p': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
                                    param_ranges=param_ranges,
                                    quasirandom=True)
