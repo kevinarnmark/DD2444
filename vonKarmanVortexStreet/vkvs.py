@@ -152,7 +152,7 @@ class IterativeTrain(TrainDomain):
         # left wall inlet
         leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u':  1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
+                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0,
                                                  'lambda_p': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
@@ -210,7 +210,6 @@ class VKVSInference(InferenceDomain):
         # inf data time 0
         res = 128
         mesh_x, mesh_y = np.meshgrid(np.linspace(bounds_x[0], bounds_x[1], res),
-                                     # TODO fix ranges and expand_dims(mesh.flatten())
                                      np.linspace(bounds_y[0], bounds_y[1], res),
                                      indexing='ij')
         mesh_x = np.expand_dims(mesh_x.flatten(), axis=-1)
@@ -226,7 +225,7 @@ class VKVSInference(InferenceDomain):
         interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
         print("DEBUG INFERENCE: " + str(len(interior2['x'])) + "," + str(len(interior2['x'])))
         for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
-            interior2['t'] = np.full_like(interior2['x'], specific_t)  # TODO time does not work
+            interior2['t'] = np.full_like(interior2['x'], specific_t)  # TODO time does not work correctly
             print("DEBUG INFERENCE: " + str(len(interior2['t'])))
             inf2 = Inference(interior2, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf2, "NewInference_" + str(i).zfill(4))
@@ -236,7 +235,7 @@ class VKVSSolver(Solver):
     seq_train_domain = [ICTrain, IterativeTrain]
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
-    arch = ModifiedFourierNetArch
+    #arch = ModifiedFourierNetArch
     convergence_check = 1.0e-4
 
     def __init__(self, **config):
@@ -308,8 +307,8 @@ class VKVSSolver(Solver):
             'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
-            'adaptive_activations': True,
-            'save_filetypes': 'vtk'
+            'adaptive_activations': False,
+            'save_filetypes': 'vtk, np'
             #'convergence_check': 5.0e-3
         })
 

@@ -78,7 +78,7 @@ upper = Upper()
 # Generate mesh (examples with and without a hole in the mesh) 
 resolution = 32
 #mesh = RectangleMesh(Point(0.0, 0.0), Point(L, H), L*resolution, H*resolution)
-mesh = generate_mesh(Rectangle(Point(0.0,0.0), Point(L,H)) - Circle(Point(xc,yc),rc), resolution)
+mesh = generate_mesh(Rectangle(Point(0.0,0.0), Point(L,H)) - Circle(Point(xc,yc),rc, 1024), resolution)
 
 # Local mesh refinement (specified by a cell marker)
 no_levels = 0
@@ -167,7 +167,7 @@ bcp = [bcp1]
 ds = Measure('ds', domain=mesh, subdomain_data=boundaries)
 
 # Set viscosity
-nu = 4.0e-3
+nu = 4.0e-4
 
 # Define iteration functions
 # (u0,p0) solution from previous time step
