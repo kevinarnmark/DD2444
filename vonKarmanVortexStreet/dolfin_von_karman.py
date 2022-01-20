@@ -78,7 +78,7 @@ upper = Upper()
 # Generate mesh (examples with and without a hole in the mesh) 
 resolution = 32
 #mesh = RectangleMesh(Point(0.0, 0.0), Point(L, H), L*resolution, H*resolution)
-mesh = generate_mesh(Rectangle(Point(0.0,0.0), Point(L,H)) - Circle(Point(xc,yc),rc, 1024), resolution)
+mesh = generate_mesh(Rectangle(Point(0.0,0.0), Point(L,H)) - Circle(Point(xc,yc),rc, 64), resolution)
 
 # Local mesh refinement (specified by a cell marker)
 no_levels = 0
