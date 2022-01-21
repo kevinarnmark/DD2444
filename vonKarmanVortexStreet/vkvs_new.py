@@ -30,7 +30,6 @@ bounds_y = (0, height)
 nu = 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
-directory = './network_checkpoint_vkvs_re' + str(re)  # Results directory
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -41,25 +40,28 @@ geo = rec - circle
 x, y = Symbol('x'), Symbol('y')
 
 # param range
-total_nr_iterations = 12
+#total_nr_iterations = 12
 
 # time window size
-time_window_size = 6 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
+#time_window_size = 6 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
 # TODO or if iteration 0000 is the first time window
 
 # time domain
 t_symbol = Symbol('t')
-time_range = (0, time_window_size)
+#time_range = (0, time_window_size)
+time_range = (0, 30)
 param_ranges = {t_symbol: time_range}
 
+directory = './vkvs_new_re' + str(re) + '_t_' + str(time_range[0]) + '-' + str(time_range[1])  # Results directory
 
-class ICTrain(TrainDomain):
-    name = 'initial_conditions'
-    nr_iterations = 1
+
+class VKVSTrain(TrainDomain):
+    #name = 'initial_conditions'
+    #nr_iterations = 1
 
     def __init__(self, **config):
-        super(ICTrain, self).__init__()
-        batch_size = 32
+        super(VKVSTrain, self).__init__()
+        batch_size = 128
 
         ic = geo.interior_bc(outvar_sympy={'u': 0,
                                            'v': 0,
@@ -119,87 +121,13 @@ class ICTrain(TrainDomain):
         interior = geo.interior_bc(outvar_sympy={'continuity': 0, 'momentum_x': 0, 'momentum_y': 0},
                                    bounds={x: bounds_x,
                                            y: bounds_y},
-                                   lambda_sympy={'lambda_continuity': geo.sdf,
+                                   lambda_sympy={'lambda_continuity': geo.sdf, # TODO test without sdf weighting
                                                  'lambda_momentum_x': geo.sdf,
                                                  'lambda_momentum_y': geo.sdf},
                                    batch_size_per_area=batch_size * 8,
                                    param_ranges=param_ranges,
                                    quasirandom=True)
         self.add(interior, name="Interior")
-
-
-class IterativeTrain(TrainDomain):
-    name = 'iteration'
-    nr_iterations = total_nr_iterations - 1
-
-    def __init__(self, **config):
-        super(IterativeTrain, self).__init__()
-        batch_size = 32
-        ic = geo.interior_bc(outvar_sympy={'u_ic': 0,
-                                           'v_ic': 0,
-                                           'p_ic': 0},
-                             batch_size_per_area=batch_size * 8,
-                             bounds={x: bounds_x,
-                                     y: bounds_y},
-                             lambda_sympy={'lambda_u_ic': 100,
-                                           'lambda_v_ic': 100,
-                                           'lambda_p_ic': 100},
-                             param_ranges={t_symbol: 0},
-                             quasirandom=True)
-        self.add(ic, name="IterativeIC")
-
-        # left wall inlet
-        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0},
-                                   batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
-                                                 'lambda_v': 1.0},
-                                   criteria=Eq(x, bounds_x[0]),
-                                   param_ranges=param_ranges,
-                                   quasirandom=True)
-        self.add(leftWall, name="IterativeleftWall")
-
-        # no slip top wall
-        topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                  batch_size_per_area=batch_size,
-                                  criteria=Eq(y, bounds_y[1]),
-                                  param_ranges=param_ranges,
-                                  quasirandom=True)
-        self.add(topWall, name="IterativetopWallNoSlip")
-
-        # no slip bottom wall
-        bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                     batch_size_per_area=batch_size,
-                                     criteria=Eq(y, bounds_y[0]),
-                                     param_ranges=param_ranges,
-                                     quasirandom=True)
-        self.add(bottomWall, name="IterativebottomWallNoSlip")
-
-        # circle no slip
-        circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
-                                      batch_size_per_area=batch_size,
-                                      param_ranges=param_ranges,
-                                      quasirandom=True)
-        self.add(circleBC, name="IterativecircleNoSlip")
-
-        # right wall outlet 0 pressure
-        rightWall = rec.boundary_bc(outvar_sympy={'p': 0},
-                                    batch_size_per_area=batch_size,
-                                    criteria=Eq(x, bounds_x[1]),
-                                    param_ranges=param_ranges,
-                                    quasirandom=True)
-        self.add(rightWall, name="IterativerightWall")
-
-        # interior
-        interior = geo.interior_bc(outvar_sympy={'continuity': 0, 'momentum_x': 0, 'momentum_y': 0},
-                                   bounds={x: bounds_x,
-                                           y: bounds_y},
-                                   lambda_sympy={'lambda_continuity': geo.sdf,
-                                                 'lambda_momentum_x': geo.sdf,
-                                                 'lambda_momentum_y': geo.sdf},
-                                   batch_size_per_area=batch_size * 8,
-                                   param_ranges=param_ranges,
-                                   quasirandom=True)
-        self.add(interior, name="IterativeInterior")
 
 
 class VKVSInference(InferenceDomain): # TODO convert to without time windows...
@@ -212,29 +140,37 @@ class VKVSInference(InferenceDomain): # TODO convert to without time windows...
                                      indexing='ij')
         mesh_x = np.expand_dims(mesh_x.flatten(), axis=-1)
         mesh_y = np.expand_dims(mesh_y.flatten(), axis=-1)
-        for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
+        mesh = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        for i, specific_t in enumerate(np.linspace(time_range[0], time_range[1], 10)):
             interior = {'x': mesh_x,
                         'y': mesh_y,
                         't': np.full_like(mesh_x, specific_t)}
-            print("DEBUG INFERENCE CORRECT: " + str(len(interior['x'])) + "," + str(len(interior['x'])) + ", " + str(len(interior['t'])))
-            inf = Inference(interior, ['u', 'v', 'p', 'shifted_t'])
-            self.add(inf, "Inference_" + str(i).zfill(4))
-
-        interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
-        print("DEBUG INFERENCE: " + str(len(interior2['x'])) + "," + str(len(interior2['x'])))
-        for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
-            interior2['t'] = np.full_like(interior2['x'], specific_t)  # TODO time does not work correctly
-            print("DEBUG INFERENCE: " + str(len(interior2['t'])))
-            inf2 = Inference(interior2, ['u', 'v', 'p', 'shifted_t'])
+            interior2 = {'x': mesh['x'],
+                         'y': mesh['y'],
+                         't': np.full_like(mesh['x'], specific_t)}
+            #print("DEBUG INFERENCE CORRECT: " + str(len(interior['x'])) + "," + str(len(interior['x'])) + ", " + str(len(interior['t'])))
+            inf = Inference(interior, ['u', 'v', 'p', 't'])
+            inf2 = Inference(interior2, ['u', 'v', 'p', 't'])
+            self.add(inf, "Inference_" + str(i).zfill(4)) 
             self.add(inf2, "NewInference_" + str(i).zfill(4))
+        """
+        interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        #print("DEBUG INFERENCE: " + str(len(interior2['x'])) + "," + str(len(interior2['x'])))
+        for i, specific_t in enumerate(np.linspace(time_range[0], time_range[1], time_range[1])):
+            interior2['t'] = np.full_like(interior2['x'], specific_t)  # TODO time does not work correctly
+            #print("DEBUG INFERENCE: " + str(len(interior2['t'])))
+            inf2 = Inference(interior2, ['u', 'v', 'p', 't'])
+            self.add(inf2, "NewInference_" + str(i).zfill(4))
+        """
 
 
 class VKVSSolver(Solver):
-    seq_train_domain = [ICTrain, IterativeTrain]
-    iterative_train_domain = IterativeTrain
+    #seq_train_domain = [ICTrain, IterativeTrain]
+    #iterative_train_domain = IterativeTrain
+    train_domain = VKVSTrain
     inference_domain = VKVSInference
     #arch = ModifiedFourierNetArch
-    convergence_check = 1.0e-4
+    convergence_check = 1.0e-6
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -310,7 +246,7 @@ class VKVSSolver(Solver):
             'max_steps': 20000,
             'decay_steps': 3000,
             'xla': True,
-            'adaptive_activations': False,
+            'adaptive_activations': True,
             'save_filetypes': 'vtk, np'
             #'convergence_check': 5.0e-3
         })

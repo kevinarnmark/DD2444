@@ -268,6 +268,7 @@ class Solver2(Solver):
                         for key in train_stats.keys():
                             if 'loss' in key.name:  # print values with loss
                                 print(key.name + ": " + str(train_stats[key]))
+                        print("relative_loss: " + str(abs(train_stats['total_loss']/initial_loss)))
                         elapsed = (time.time() - t) / self.print_stats_freq
                         t = time.time()
                         print("time: " + str(elapsed))
