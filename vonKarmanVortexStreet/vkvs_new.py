@@ -49,10 +49,10 @@ x, y = Symbol('x'), Symbol('y')
 # time domain
 t_symbol = Symbol('t')
 #time_range = (0, time_window_size)
-time_range = (0, 30)
+time_range = (0, 12)
 param_ranges = {t_symbol: time_range}
 
-directory = './vkvs_new_re' + str(re) + '_t_' + str(time_range[0]) + '-' + str(time_range[1])  # Results directory
+directory = './vkvs_newnew_re' + str(re) + '_t_' + str(time_range[0]) + '-' + str(time_range[1])  # Results directory
 
 
 class VKVSTrain(TrainDomain):
@@ -61,7 +61,7 @@ class VKVSTrain(TrainDomain):
 
     def __init__(self, **config):
         super(VKVSTrain, self).__init__()
-        batch_size = 128
+        batch_size = 64
 
         ic = geo.interior_bc(outvar_sympy={'u': 0,
                                            'v': 0,
@@ -124,7 +124,7 @@ class VKVSTrain(TrainDomain):
                                    lambda_sympy={'lambda_continuity': geo.sdf, # TODO test without sdf weighting
                                                  'lambda_momentum_x': geo.sdf,
                                                  'lambda_momentum_y': geo.sdf},
-                                   batch_size_per_area=batch_size * 8,
+                                   batch_size_per_area=batch_size * 8 * 2,
                                    param_ranges=param_ranges,
                                    quasirandom=True)
         self.add(interior, name="Interior")
@@ -134,24 +134,27 @@ class VKVSInference(InferenceDomain): # TODO convert to without time windows...
     def __init__(self, **config):
         super(VKVSInference, self).__init__()
         # inf data time 0
+        """
         res = 128
         mesh_x, mesh_y = np.meshgrid(np.linspace(bounds_x[0], bounds_x[1], res),
                                      np.linspace(bounds_y[0], bounds_y[1], res),
                                      indexing='ij')
         mesh_x = np.expand_dims(mesh_x.flatten(), axis=-1)
         mesh_y = np.expand_dims(mesh_y.flatten(), axis=-1)
+        """
         mesh = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
         for i, specific_t in enumerate(np.linspace(time_range[0], time_range[1], 10)):
-            interior = {'x': mesh_x,
-                        'y': mesh_y,
-                        't': np.full_like(mesh_x, specific_t)}
+            #interior = {'x': mesh_x,
+            #            'y': mesh_y,
+            #            't': np.full_like(mesh_x, specific_t)}
             interior2 = {'x': mesh['x'],
                          'y': mesh['y'],
                          't': np.full_like(mesh['x'], specific_t)}
+            #print("DEBUG INFERENCE: " + str(specific_t))
             #print("DEBUG INFERENCE CORRECT: " + str(len(interior['x'])) + "," + str(len(interior['x'])) + ", " + str(len(interior['t'])))
-            inf = Inference(interior, ['u', 'v', 'p', 't'])
+            #inf = Inference(interior, ['u', 'v', 'p', 't'])
             inf2 = Inference(interior2, ['u', 'v', 'p', 't'])
-            self.add(inf, "Inference_" + str(i).zfill(4)) 
+            #self.add(inf, "Inference_" + str(i).zfill(4)) 
             self.add(inf2, "NewInference_" + str(i).zfill(4))
         """
         interior2 = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
@@ -169,8 +172,8 @@ class VKVSSolver(Solver):
     #iterative_train_domain = IterativeTrain
     train_domain = VKVSTrain
     inference_domain = VKVSInference
-    #arch = ModifiedFourierNetArch
-    convergence_check = 1.0e-6
+    arch = ModifiedFourierNetArch
+    convergence_check = 1.0e-30
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -195,7 +198,8 @@ class VKVSSolver(Solver):
             outvar['p_ic'] = invar['p'] - tf.stop_gradient(invar['p_prev_step'])
             return outvar
         """
-        self.equations = (NavierStokes(nu=nu, rho=1, dim=2, time=True).make_node()
+
+        self.equations = (NavierStokes(nu=nu, rho=1.0, dim=2, time=True).make_node()
                           # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
                           # + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
                           # + [Node.from_sympy(geo.sdf, 'normal_distance')]
@@ -243,8 +247,8 @@ class VKVSSolver(Solver):
         defaults.update({
             'network_dir': directory,
             'layer_size': 256,
-            'max_steps': 20000,
-            'decay_steps': 3000,
+            'max_steps': 3000000,
+            'decay_steps': 30000,
             'xla': True,
             'adaptive_activations': True,
             'save_filetypes': 'vtk, np'

@@ -16,10 +16,10 @@ from modulus.node import Node
 from modulus.architecture import ModifiedFourierNetArch
 
 # params for domain
-height = 4.0  # 2.0
-width = 8.0  # 4.0
+height = 2.0  # 2.0
+width = 4.0  # 4.0
 radius = 0.2
-circle_pos = (width / 8, height / 2)  # (width / 4, height / 2)
+circle_pos = (width / 4, height / 2)  # (width / 4, height / 2)
 vel = 1.0
 boundary = ((0, 0), (width, height))
 bounds_x = (0, width)
@@ -30,7 +30,7 @@ max_distance = 2.0  # TODO check if this is correct
 nu = 4.0e-3
 
 re = int((radius * 2) / nu)  # Reynolds Number
-directory = './network_checkpoint_vkvs_re' + str(re)  # Results directory
+#directory = './vkvs_tw_re' + str(re)  # Results directory
 
 # define geometry
 rec = Rectangle(boundary[0], boundary[1])
@@ -40,30 +40,40 @@ geo = rec - circle
 # define sympy variables to parametrize domain curves
 x, y = Symbol('x'), Symbol('y')
 
+# Sample batch size
+batch_size = 32
+
+# time stepping size:
+dt = 0.5 * 1/np.sqrt(batch_size*8)  # Approximate, assuming perfectly spaced sample points
+end_time = 12
+
+directory = './vkvs_tw_small_re' + str(re) + '_t_' + str(0) + '-' + str(end_time) + '_dt_' + str(dt)  # Results directory
+
 # param range
-total_nr_iterations = 12
+total_nr_iterations = int(np.ceil(end_time/dt) + 1)
+print("Total nr of iteraitons:" + str(total_nr_iterations))
 
 # time window size
-time_window_size = 6 / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
+time_window_size = dt #end_time / total_nr_iterations  # TODO total_nr_iterations - 1? Depending on if the initial is one window
 # TODO or if iteration 0000 is the first time window
 
 # time domain
 t_symbol = Symbol('t')
 time_range = (0, time_window_size)
+print("Time Window Size: " + str(time_window_size))
 param_ranges = {t_symbol: time_range}
 
-
-class ICTrain(TrainDomain):
+class ICTrain(TrainDomain): # TODO Can probably remove, does not do anything more than lower the loss for the first iteration
     name = 'initial_conditions'
     nr_iterations = 1
 
     def __init__(self, **config):
         super(ICTrain, self).__init__()
-        batch_size = 32
+        #self.batch_size = batch_size
 
-        ic = geo.interior_bc(outvar_sympy={'u': 0,
-                                           'v': 0,
-                                           'p': 0},
+        ic = geo.interior_bc(outvar_sympy={'u': 0.0,
+                                           'v': 0.0,
+                                           'p': 0.0},
                              batch_size_per_area=batch_size * 8,
                              bounds={x: bounds_x,
                                      y: bounds_y},
@@ -75,9 +85,9 @@ class ICTrain(TrainDomain):
         self.add(ic, name="ic")
 
         # left wall inlet
-        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
+        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0.0},#, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
+                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0,
                                                  'lambda_p': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
@@ -86,7 +96,7 @@ class ICTrain(TrainDomain):
         self.add(leftWall, name="leftWall")
 
         # no slip top wall
-        topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        topWall = rec.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                   batch_size_per_area=batch_size,
                                   criteria=Eq(y, bounds_y[1]),
                                   param_ranges=param_ranges,
@@ -94,7 +104,7 @@ class ICTrain(TrainDomain):
         self.add(topWall, name="topWallNoSlip")
 
         # no slip bottom wall
-        bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        bottomWall = rec.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                      batch_size_per_area=batch_size,
                                      criteria=Eq(y, bounds_y[0]),
                                      param_ranges=param_ranges,
@@ -102,14 +112,14 @@ class ICTrain(TrainDomain):
         self.add(bottomWall, name="bottomWallNoSlip")
 
         # circle no slip
-        circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        circleBC = circle.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                       batch_size_per_area=batch_size,
                                       param_ranges=param_ranges,
                                       quasirandom=True)
         self.add(circleBC, name="circleNoSlip")
 
         # right wall outlet 0 pressure
-        rightWall = rec.boundary_bc(outvar_sympy={'p': 0},
+        rightWall = rec.boundary_bc(outvar_sympy={'p': 0.0},
                                     batch_size_per_area=batch_size,
                                     criteria=Eq(x, bounds_x[1]),
                                     param_ranges=param_ranges,
@@ -117,7 +127,7 @@ class ICTrain(TrainDomain):
         self.add(rightWall, name="rightWall")
 
         # interior
-        interior = geo.interior_bc(outvar_sympy={'continuity': 0, 'momentum_x': 0, 'momentum_y': 0},
+        interior = geo.interior_bc(outvar_sympy={'continuity': 0.0, 'momentum_x': 0.0, 'momentum_y': 0.0},
                                    bounds={x: bounds_x,
                                            y: bounds_y},
                                    lambda_sympy={'lambda_continuity': geo.sdf,
@@ -135,10 +145,10 @@ class IterativeTrain(TrainDomain):
 
     def __init__(self, **config):
         super(IterativeTrain, self).__init__()
-        batch_size = 32
-        ic = geo.interior_bc(outvar_sympy={'u_ic': 0,
-                                           'v_ic': 0,
-                                           'p_ic': 0},
+        #self.batch_size = batch_size
+        ic = geo.interior_bc(outvar_sympy={'u_ic': 0.0,
+                                           'v_ic': 0.0,
+                                           'p_ic': 0.0},
                              batch_size_per_area=batch_size * 8,
                              bounds={x: bounds_x,
                                      y: bounds_y},
@@ -150,9 +160,9 @@ class IterativeTrain(TrainDomain):
         self.add(ic, name="IterativeIC")
 
         # left wall inlet
-        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
+        leftWall = rec.boundary_bc(outvar_sympy={'u': vel, 'v': 0.0}, #, 'p': 5.0*abs(sin(t_symbol))}, # TODO remove pressure equation
                                    batch_size_per_area=batch_size,
-                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 2.0)) / 4.0),  # 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
+                                   lambda_sympy={'lambda_u': 1.0 - ((2.0 * abs(y - 1.0)) / 2.0),
                                                  'lambda_v': 1.0,
                                                  'lambda_p': 1.0},
                                    criteria=Eq(x, bounds_x[0]),
@@ -161,7 +171,7 @@ class IterativeTrain(TrainDomain):
         self.add(leftWall, name="IterativeleftWall")
 
         # no slip top wall
-        topWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        topWall = rec.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                   batch_size_per_area=batch_size,
                                   criteria=Eq(y, bounds_y[1]),
                                   param_ranges=param_ranges,
@@ -169,7 +179,7 @@ class IterativeTrain(TrainDomain):
         self.add(topWall, name="IterativetopWallNoSlip")
 
         # no slip bottom wall
-        bottomWall = rec.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        bottomWall = rec.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                      batch_size_per_area=batch_size,
                                      criteria=Eq(y, bounds_y[0]),
                                      param_ranges=param_ranges,
@@ -177,14 +187,14 @@ class IterativeTrain(TrainDomain):
         self.add(bottomWall, name="IterativebottomWallNoSlip")
 
         # circle no slip
-        circleBC = circle.boundary_bc(outvar_sympy={'u': 0, 'v': 0},
+        circleBC = circle.boundary_bc(outvar_sympy={'u': 0.0, 'v': 0.0},
                                       batch_size_per_area=batch_size,
                                       param_ranges=param_ranges,
                                       quasirandom=True)
         self.add(circleBC, name="IterativecircleNoSlip")
 
         # right wall outlet 0 pressure
-        rightWall = rec.boundary_bc(outvar_sympy={'p': 0},
+        rightWall = rec.boundary_bc(outvar_sympy={'p': 0.0},
                                     batch_size_per_area=batch_size,
                                     criteria=Eq(x, bounds_x[1]),
                                     param_ranges=param_ranges,
@@ -192,7 +202,7 @@ class IterativeTrain(TrainDomain):
         self.add(rightWall, name="IterativerightWall")
 
         # interior
-        interior = geo.interior_bc(outvar_sympy={'continuity': 0, 'momentum_x': 0, 'momentum_y': 0},
+        interior = geo.interior_bc(outvar_sympy={'continuity': 0.0, 'momentum_x': 0.0, 'momentum_y': 0.0},
                                    bounds={x: bounds_x,
                                            y: bounds_y},
                                    lambda_sympy={'lambda_continuity': geo.sdf,
@@ -208,12 +218,30 @@ class VKVSInference(InferenceDomain):
     def __init__(self, **config):
         super(VKVSInference, self).__init__()
         # inf data time 0
-        res = 128
-        mesh_x, mesh_y = np.meshgrid(np.linspace(bounds_x[0], bounds_x[1], res),
-                                     np.linspace(bounds_y[0], bounds_y[1], res),
-                                     indexing='ij')
-        mesh_x = np.expand_dims(mesh_x.flatten(), axis=-1)
-        mesh_y = np.expand_dims(mesh_y.flatten(), axis=-1)
+        #res = 128
+
+        #mesh_x, mesh_y = np.meshgrid(np.linspace(bounds_x[0], bounds_x[1], res),
+        #                             np.linspace(bounds_y[0], bounds_y[1], res),
+        #                             indexing='ij')
+        #mesh_x = np.expand_dims(mesh_x.flatten(), axis=-1)
+        #mesh_y = np.expand_dims(mesh_y.flatten(), axis=-1)
+
+        mesh = geo.sample_interior(1e4, bounds={x: bounds_x, y: bounds_y})
+
+        for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 3)):
+            #interior = {'x': mesh_x,
+            #            'y': mesh_y,
+            #            't': np.full_like(mesh_x, specific_t)}
+            interior2 = {'x': mesh['x'],
+                         'y': mesh['y'],
+                         't': np.full_like(mesh['x'], specific_t)}
+            #print("DEBUG INFERENCE: " + str(specific_t))
+            #print("DEBUG INFERENCE CORRECT: " + str(len(interior['x'])) + "," + str(len(interior['x'])) + ", " + str(len(interior['t'])))
+            #inf = Inference(interior, ['u', 'v', 'p', 't'])
+            inf2 = Inference(interior2, ['u', 'v', 'p', 't'])
+            #self.add(inf, "Inference_" + str(i).zfill(4)) 
+            self.add(inf2, "NewInference_" + str(specific_t).replace('.','').zfill(5))#str(i).zfill(4))
+        """
         for i, specific_t in enumerate(np.linspace(time_range[0], time_window_size, 5)):
             interior = {'x': mesh_x,
                         'y': mesh_y,
@@ -229,6 +257,7 @@ class VKVSInference(InferenceDomain):
             print("DEBUG INFERENCE: " + str(len(interior2['t'])))
             inf2 = Inference(interior2, ['u', 'v', 'p', 'shifted_t'])
             self.add(inf2, "NewInference_" + str(i).zfill(4))
+        """
 
 
 class VKVSSolver(Solver):
@@ -236,7 +265,7 @@ class VKVSSolver(Solver):
     iterative_train_domain = IterativeTrain
     inference_domain = VKVSInference
     #arch = ModifiedFourierNetArch
-    convergence_check = 1.0e-4
+    convergence_check = 1.0e-20
 
     def __init__(self, **config):
         super(VKVSSolver, self).__init__(**config)
@@ -253,14 +282,17 @@ class VKVSSolver(Solver):
             return outvar
 
         # make node for difference between velocity and the previous time window of velocity
-        def make_ic_loss(invar):
+        def make_ic_loss(invar): # TODO Is really correct for this? Maybe only use the previous step as ic
             outvar = Variables()
             outvar['u_ic'] = invar['u'] - tf.stop_gradient(invar['u_prev_step'])
             outvar['v_ic'] = invar['v'] - tf.stop_gradient(invar['v_prev_step'])
             outvar['p_ic'] = invar['p'] - tf.stop_gradient(invar['p_prev_step'])
+            #outvar['u_ic'] = tf.stop_gradient(invar['u_prev_step'])
+            #outvar['v_ic'] = tf.stop_gradient(invar['v_prev_step'])
+            #outvar['p_ic'] = tf.stop_gradient(invar['p_prev_step'])
             return outvar
 
-        self.equations = (NavierStokes(nu=nu, rho=1, dim=2, time=True).make_node()
+        self.equations = (NavierStokes(nu=nu, rho=1.0, dim=2, time=True).make_node()
                           # + KEpsilon(nu=nu, rho=1, dim=2, time=True).make_node()
                           # + ZeroEquation(nu=nu, dim=2, time=True, max_distance=max_distance).make_node()
                           # + [Node.from_sympy(geo.sdf, 'normal_distance')]
@@ -280,6 +312,10 @@ class VKVSSolver(Solver):
                                                           'v_prev_step',
                                                           'p_prev_step'])
         self.nets = [flow_net, flow_net_prev_step]
+
+        self.save_network_freq = 10000
+        self.print_stats_freq = 500
+        self.tf_summary_freq = 500
 
     def custom_update_op(self):
         # zero train step op
@@ -304,8 +340,8 @@ class VKVSSolver(Solver):
         defaults.update({
             'network_dir': directory,
             'layer_size': 256,
-            'max_steps': 20000,
-            'decay_steps': 3000,
+            'max_steps': 1000,
+            'decay_steps': 900,
             'xla': True,
             'adaptive_activations': False,
             'save_filetypes': 'vtk, np'

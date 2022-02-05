@@ -167,7 +167,7 @@ bcp = [bcp1]
 ds = Measure('ds', domain=mesh, subdomain_data=boundaries)
 
 # Set viscosity
-nu = 4.0e-4
+nu = 4.0e-3
 
 # Define iteration functions
 # (u0,p0) solution from previous time step
