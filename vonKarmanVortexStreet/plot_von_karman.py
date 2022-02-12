@@ -26,9 +26,10 @@ tke_points = tke_points/np.max(tke_points)
 
 
 # load validation tke data
-validation_tke_128 = csv_to_dict('validation_tke/tke_mean_Re500_N128.csv')
-validation_tke_256 = csv_to_dict('validation_tke/tke_mean_Re500_N256.csv')
+#validation_tke_128 = csv_to_dict('validation_tke/tke_mean_Re500_N128.csv')
+#validation_tke_256 = csv_to_dict('validation_tke/tke_mean_Re500_N256.csv')
 
+"""
 # plot turbulent kinetic energy decay
 plt.plot(time_points, tke_points, label='Modulus')
 plt.plot(validation_tke_128['Time'][:,0], validation_tke_128['TKE_mean'][:,0], label='Spectral Solver (grid res: 128)')
@@ -38,3 +39,4 @@ plt.title('TKE')
 plt.ylabel('TKE')
 plt.xlabel('time')
 plt.savefig('tke_plot.png')
+"""
