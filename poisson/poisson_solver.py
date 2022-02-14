@@ -58,14 +58,14 @@ class PoissonSmooth(PDES):
         u = Function(u)(*input_variables)
 
         # Smooth Source
-        f = (1 / 4)*sum(for k in range(1,4) : (-1)**(k+1)*2*k*sin(k*np.pi*x)*sin(k*np.pi*y))
+        #f = (1 / 4)*sum(for k in range(1,4) : (-1)**(k+1)*2*k*sin(k*np.pi*x)*sin(k*np.pi*y)) # TODO fix
 
         # set equations
         self.equations = Variables()
-        self.equations['poisson_equation'] = ( f
-                                           - u.diff(x, 2)
-                                           - u.diff(y, 2)
-                                           - u.diff(z, 2))
+        self.equations['poisson_equation'] = (f
+                                              - u.diff(x, 2)
+                                              - u.diff(y, 2)
+                                              - u.diff(z, 2))
 
 
 class PoissonTrain(TrainDomain):
