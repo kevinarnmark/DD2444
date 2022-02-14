@@ -30,17 +30,17 @@ geo = rec #- circle
 x, y = Symbol('x'), Symbol('y')
 
 # Sample batch size
-batch_size = 32
+batch_size = 2**10
 
-directory = './possion_network_checkpoint'  # Results directory
+directory = './poisson_network_checkpoint'  # Results directory
 
 class PoissonSmooth(PDES):
     name="Poisson Equation"
 
-    def __init__(self, dim=2):
+    def __init__(self):
         # set params
         #self.u = u
-        self.dim = dim
+        #self.dim = dim
 
         # coordinates
         x, y = Symbol('x'), Symbol('y')
@@ -53,8 +53,7 @@ class PoissonSmooth(PDES):
         u = Function('u')(*input_variables)
 
         # Smooth Source
-        f = Function('f')(*input_variables)
-        f = (1 / 4)*sum(for k in range(1,4) : (-1)**(k+1)*2*k*sin(k*np.pi*x)*sin(k*np.pi*y))
+        f = (1 / 4)*sum((-1)**(k+1)*2*k*sin(k*np.pi*x)*sin(k*np.pi*y) for k in range(1,4))
 
         # set equations
         self.equations = Variables()
@@ -126,14 +125,22 @@ class PoissonTrain(TrainDomain):
                                     quasirandom=True)
         self.add(rightWall, name="IterativerightWall")
         """
+        # boundary
+        boundary_condition = geo.boundary_bc(outvar_sympy={'u': 0},
+                                    batch_size_per_area=1000,
+                                    #criteria=Eq(x, bounds_x[1]),
+                                    #param_ranges=param_ranges,
+                                    quasirandom=False)
+        self.add(boundary_condition, name="BC")
+
         # interior
         interior = geo.interior_bc(outvar_sympy={'poisson_equation': 0},
                                    bounds={x: bounds_x,
                                            y: bounds_y},
                                    lambda_sympy={'lambda_poisson_equation': 1.0},
-                                   batch_size_per_area=batch_size * 8,
+                                   batch_size_per_area=128**2,
                                    #param_ranges=param_ranges,
-                                   quasirandom=True)
+                                   quasirandom=False)
         self.add(interior, name="Interior")
 
 
@@ -141,7 +148,7 @@ class PoissonInference(InferenceDomain):
     def __init__(self, **config):
         super(PoissonInference, self).__init__()
 
-        mesh = geo.sample_interior(1e3, bounds={x: bounds_x, y: bounds_y})
+        mesh = geo.sample_interior(1e4, bounds={x: bounds_x, y: bounds_y})
 
         inf = Inference(mesh, ['u'])
         self.add(inf, "Inference")
@@ -152,7 +159,7 @@ class PoissonSolver(Solver):
     train_domain = PoissonTrain
     inference_domain = PoissonInference
     #arch = ModifiedFourierNetArch
-    convergence_check = 1.0e-20
+    convergence_check = 1.0e-6
 
     def __init__(self, **config):
         super(PoissonSolver, self).__init__(**config)
@@ -164,7 +171,7 @@ class PoissonSolver(Solver):
                                        outputs=['u'])
         self.nets = [poisson_net]
 
-        self.save_network_freq = 10000
+        self.save_network_freq = 5000
         self.print_stats_freq = 500
         self.tf_summary_freq = 500
 
@@ -173,8 +180,9 @@ class PoissonSolver(Solver):
         defaults.update({
             'network_dir': directory,
             'layer_size': 256,
-            'max_steps': 1000,
-            'decay_steps': 900,
+            'nr_layer': 8,
+            'max_steps': 20000,
+            'decay_steps': 10000,
             'xla': True,
             'adaptive_activations': False,
             'save_filetypes': 'vtk, np'
